@@ -11,4 +11,16 @@ public struct RectBounds{
         left = -size;
         right = size;
     }
+
+    public bool Equals(RectBounds obj){
+        if (obj.upper == upper &&
+            obj.lower == lower &&
+            obj.left == left &&
+            obj.right == right){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
 }

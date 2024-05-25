@@ -7,7 +7,7 @@ public class CameraBounds : MonoBehaviour
 
     // private Dictionary<string, Vector3> CameraCorners = new Dictionary<string, Vector3>();
 
-    public RectBounds rectBounds;
+    public RectBounds rectBounds = new RectBounds();
 
     void Start()
     {
@@ -21,11 +21,6 @@ public class CameraBounds : MonoBehaviour
 
         Debug.DrawLine(UR, BL, Color.cyan, 9999);
         Debug.DrawLine(UL, BR, Color.cyan, 9999);
-
-        // CameraCorners["BL"] = BL;
-        // CameraCorners["UL"] = UL;
-        // CameraCorners["UR"] = UR;
-        // CameraCorners["BR"] = BR;
 
         rectBounds.upper = UL.y;
         rectBounds.lower = BR.y;
