@@ -6,8 +6,8 @@ using TMPro;
 using Unity.Mathematics;
 using System;
 
-public class Boid : MonoBehaviour
-{
+public class Boid : MonoBehaviour{
+
     public TextMeshProUGUI DebugBox1;
     public TextMeshProUGUI DebugBox2;
 
@@ -29,6 +29,8 @@ public class Boid : MonoBehaviour
     public float ASCRotation = 0f;
 
     public Vector3 CurrentDestination;
+
+    public bool wrapAtBounds = true;
 
     private float fixedZ = 0f;
 
@@ -75,8 +77,14 @@ public class Boid : MonoBehaviour
         Vector3 direction =  median_target.normalized * (currentSpeed() * Time.deltaTime);
         Vector3 newPos = gameObject.transform.position + direction;
 
-        // gameObject.transform.position = ClampToBounds(newPos);
-        gameObject.transform.position = WrapOnBounds(newPos);
+
+        if (wrapAtBounds){
+            gameObject.transform.position = WrapOnBounds(newPos);
+        }
+        else{
+            gameObject.transform.position = ClampToBounds(newPos);
+        }
+        
 
         // gameObject.transform.position += direction;
 
@@ -90,7 +98,6 @@ public class Boid : MonoBehaviour
             req_rotation -= 360;
         }
         req_rotation = Mathf.Lerp(req_rotation, last_req_rotation, RotationGradient);
-        // req_rotation = Mathf.Lerp(req_rotation, ASCRotation, ASCGradient);
         req_rotation = Mathf.Lerp(req_rotation, ASCRotation, ASCGradient);
 
         req_rotation = math.clamp(req_rotation, -max_rot, max_rot);
@@ -116,6 +123,7 @@ public class Boid : MonoBehaviour
         Vector2 mousePos = CurrentMousePos();
         MoveTowardsPoint(mousePos);
     }
+    
     Vector2 CurrentMousePos(){
         Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         return new Vector2(mousePos.x, mousePos.y);
@@ -135,10 +143,10 @@ public class Boid : MonoBehaviour
             return;
         }
 
-        if (Input.GetMouseButton(0)){
-            MoveTowardsCursor();
-            return;
-        }
+        // if (Input.GetMouseButton(0)){
+        //     MoveTowardsCursor();
+        //     return;
+        // }
 
         if (CurrentDestination != default(Vector3)){
             MoveTowardsPoint(CurrentDestination);
@@ -154,4 +162,5 @@ public class Boid : MonoBehaviour
 
         
     }
+
 }

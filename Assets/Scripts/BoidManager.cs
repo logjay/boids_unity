@@ -23,7 +23,7 @@ public class BoidManager : MonoBehaviour{
 
     public float BoidAttnRadius = 2.5f;
 
-    private float SeparationMinimumDist = 0.5f;
+    private float SeparationMinimumDist = 0.0f;
 
     public float A = 0.1f;
     public float C = 0.1f;
@@ -35,6 +35,10 @@ public class BoidManager : MonoBehaviour{
     [SerializeField]
     private float DestAssignRate = .75f;
     private float newDestCounter;
+
+    public bool wrapAtBounds = true;
+
+    public bool active = true;
     
     void Start(){
         newDestCounter = DestAssignRate;
@@ -75,6 +79,7 @@ public class BoidManager : MonoBehaviour{
         Boid boidScript = newBoid.GetComponent<Boid>();
         boidScript.rectBounds = spawnRectBounds;
         boidScript.active = true;
+        boidScript.wrapAtBounds = wrapAtBounds;
         newBoid.transform.position = boidScript.GetRandomLocInBounds();
 
 
@@ -124,10 +129,10 @@ public class BoidManager : MonoBehaviour{
         Vector3 avg_other_dest = (average_neighbor_dest - (nearby.Count * primLoc)) / math.max(nearby.Count, 1);
 
 
-        ASCVectors[primary] = -avg_separational_weight * S; // separation
+        ASCVectors[primary] = avg_separational_weight * S; // separation
         ASCVectors[primary] += avg_other_dest * C; // cohesion
 
-        ASCRotations[primary] = avg_rotation;
+        ASCRotations[primary] = avg_rotation * A;
     }
 
     void AdjustBoidPathing(){
@@ -161,19 +166,22 @@ public class BoidManager : MonoBehaviour{
         }
     }
 
-    void Update(){
-        // if (Input.GetKeyDown("space")){
-        //     CreateNewBoid();
-        // }
-
+    void ManageBoidCount(){
         while( BoidsList.Count < numBoids){
             CreateNewBoid();
         }
         RemoveBoids(BoidsList.Count - numBoids);
+    }
 
+    void Update(){
+
+        if (!active){
+            return;
+        }
+
+        ManageBoidCount();
 
         AdjustBoidPathing();
-
 
         if (newDestCounter <= 0){
             // AssignNewDestToBoids();
