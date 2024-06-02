@@ -92,7 +92,7 @@ public class BoidController : MonoBehaviour{
         Vector3 CohesionAveragePos = Vector3.zero;
         Vector3 WeightedSeparationVector = Vector3.zero;
 
-        float AvgRotationVector = 0f;
+        Vector3 AvgRotationVector = Vector3.zero;
 
         for(int idx=0; idx < BoidsList.Count; idx++){
             if (idx == prime){
@@ -101,6 +101,7 @@ public class BoidController : MonoBehaviour{
             
             Vector3 boidPos = BoidsList[idx].transform.position;
             float distance = Vector3.Distance(primePos, boidPos);
+
 
             if (distance <= farRadius){
 
@@ -114,21 +115,23 @@ public class BoidController : MonoBehaviour{
 
                 if (distance <= nearRadius){
 
+                    VelocityObject velocityScript = BoidsList[idx].GetComponent<VelocityObject>();
+
                     // posDelta = boidPos - (primePos + prime_boid.transform.up);
 
                     //get separation push (do NOT average)
                     WeightedSeparationVector -= posDelta * math.pow(nearRadius - Vector3.Magnitude(posDelta), SProxWeight) / math.pow(nearRadius, SProxWeight);
 
                     //get alignment
-                    float relRot = Quaternion.FromToRotation(prime_boid.transform.transform.up, BoidsList[idx].transform.up).eulerAngles.z;
+                    // float relRot = Quaternion.FromToRotation(prime_boid.transform.transform.up, BoidsList[idx].transform.up).eulerAngles.z;
                     
-                    relRot -= 360;
+                    // relRot -= 360;
 
-                    if (relRot >= 180){
-                        relRot -= 360;
-                    }
+                    // if (relRot >= 180){
+                    //     relRot -= 360;
+                    // }
 
-                    AvgRotationVector += relRot;
+                    AvgRotationVector += velocityScript.velocity;
 
                     viewedNearBoids++;
                 }
@@ -137,12 +140,16 @@ public class BoidController : MonoBehaviour{
         }
 
         CohesionAveragePos /= math.max(viewedFarBoids, 1);
-        AvgRotationVector /= math.max(viewedNearBoids, 1);
+        // AvgRotationVector /= math.max(viewedNearBoids, 1);
 
 
 
-        ASCVectBumps[prime] = Vector3.Slerp(WeightedSeparationVector, CohesionAveragePos.normalized, C / (C+S)) * (C+S) / 2;
-        ASCRotBumps[prime] = AvgRotationVector;
+        // ASCVectBumps[prime] = Vector3.Slerp(WeightedSeparationVector, CohesionAveragePos.normalized, C / (C+S)) * (C+S) / 2;
+
+        ASCVectBumps[prime] = AvgRotationVector.normalized * A;
+        ASCVectBumps[prime] += WeightedSeparationVector.normalized * S;
+        ASCVectBumps[prime] += CohesionAveragePos.normalized * C;
+        // ASCRotBumps[prime] = AvgRotationVector.normalized;
     }
 
     void GetASCBumps(){
@@ -160,21 +167,27 @@ public class BoidController : MonoBehaviour{
 
             VelocityObject moveScript = BoidsList[primBoid].GetComponent<VelocityObject>();
 
-            if (float.IsNaN(ASCVectBumps[primBoid].x)){
-                moveScript.MoveObjectForward();
-            }
-            else{
-                Vector3 netVector = Vector3.Slerp(BoidsList[primBoid].transform.up, ASCVectBumps[primBoid], 0.5f);
-
-                //rotate
-                float rotationToTarget = Quaternion.FromToRotation(BoidsList[primBoid].transform.up, netVector).eulerAngles.z;
-                float rotationToAlignment = (ASCRotBumps[primBoid] - BoidsList[primBoid].transform.eulerAngles.z) * A;
-                rotationToTarget = math.lerp(rotationToTarget, rotationToAlignment, .5f);
-                moveScript.RotateInDirection(rotationToTarget + rotationalJitter(5f));
 
 
-                moveScript.MoveObjectForward(math.min(netVector.magnitude, 1f));
-            }
+            moveScript.iter_force += ASCVectBumps[primBoid];
+            // moveScript.desiredRot = ASCRotBumps[primBoid];
+            moveScript.StepObject();
+
+            // if (float.IsNaN(ASCVectBumps[primBoid].x)){
+            //     moveScript.MoveObjectForward();
+            // }
+            // else{
+            //     Vector3 netVector = Vector3.Slerp(BoidsList[primBoid].transform.up, ASCVectBumps[primBoid], 0.5f);
+
+            //     //rotate
+            //     float rotationToTarget = Quaternion.FromToRotation(BoidsList[primBoid].transform.up, netVector).eulerAngles.z;
+            //     float rotationToAlignment = (ASCRotBumps[primBoid] - BoidsList[primBoid].transform.eulerAngles.z) * A;
+            //     rotationToTarget = math.lerp(rotationToTarget, rotationToAlignment, .5f);
+            //     moveScript.RotateInDirection(rotationToTarget + rotationalJitter(5f));
+
+
+            //     // moveScript.MoveObjectForward(math.min(netVector.magnitude, 1f));
+            // }
 
 
         }

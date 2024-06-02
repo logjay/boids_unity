@@ -21,20 +21,24 @@ control movement
 public class VelocityObject : MonoBehaviour{
 
 
-    public Vector3 acceleration = Vector3.zero;
-    public float max_speed = 5f;
+    public float max_accel = 2f;
     [SerializeField]
-    private Vector3 velocity = Vector3.zero;
+    private Vector3 acceleration = Vector3.zero;
 
-    public float force = 1f;
+    public float max_speed = 3f;
+    [SerializeField]
+    public Vector3 velocity = Vector3.zero;
 
-    public float rotAcceleration = 0f;
-    private float rotVelocity = 0f;
+    public Vector3 iter_force = Vector3.zero;
+    // public float rotAcceleration = 0f;
+    // private float rotVelocity = 0f;
+
+    public float desiredRot = 0;
 
     [SerializeField]
-    private float rotational_cap = 90;
-    [SerializeField]
-    float RotationGradient = 0.5f;
+    private float rotational_cap = 360;
+    // [SerializeField]
+    // float RotationGradient = 0.5f;
 
     public RectBounds ValidArea;
     public bool wrapAtBounds = true;
@@ -43,7 +47,7 @@ public class VelocityObject : MonoBehaviour{
 
     public bool active = false;
 
-    private float prevRotation;
+    // private float prevRotation;
     
     
     public Vector3 GetRandomLocInBounds(){
@@ -88,38 +92,15 @@ public class VelocityObject : MonoBehaviour{
         return newPos;
     }
 
-    public Vector3 NextLocation(){
-        return gameObject.transform.up + velocity * Time.deltaTime;
-    }
+    public Vector3 GetMoveByPhysics(){
 
-    public Vector3 defaultAccel(){
-        // return gameObject.transform.up * force;
-        // return gameObject.transform.up * 0.75f;
-        return Vector3.zero;
-    }
+        acceleration += iter_force;
+        acceleration = Vector3.ClampMagnitude(acceleration, max_accel);
 
-    Vector3 CalculateNextMarch(){
+        velocity += acceleration * Time.deltaTime;
+        velocity = Vector3.ClampMagnitude(velocity, max_speed);
 
-        rotVelocity += Time.deltaTime * rotAcceleration;
-
-        // velocity += Time.deltaTime * acceleration;
-
-        velocity = gameObject.transform.up;
-
-        velocity = velocity.normalized * math.min(velocity.magnitude, max_speed);
-        Vector3 delta = velocity * Time.deltaTime;
-
-        Vector3 newLoc = gameObject.transform.position + delta;
-
-        if (wrapAtBounds){
-            newLoc = BoundaryWrap(newLoc);
-        }
-        else{
-            newLoc = BoundaryClamp(newLoc);
-        }
-        newLoc.z = fixedZ;
-
-        return newLoc;
+        return velocity * Time.deltaTime;
     }
 
     public void RotateInDirection(float rotation_in_degrees){
@@ -131,18 +112,13 @@ public class VelocityObject : MonoBehaviour{
         float maxRotationPerTick = rotational_cap * Time.deltaTime;
         rotation_in_degrees = math.clamp(rotation_in_degrees, -maxRotationPerTick, maxRotationPerTick);
 
-        rotation_in_degrees = Mathf.Lerp(rotation_in_degrees, prevRotation, RotationGradient);
-
         gameObject.transform.Rotate(0f, 0f, rotation_in_degrees);
 
-
-        prevRotation = rotation_in_degrees;
     }
 
-    public void MoveObjectForward(float speed = 1f){
+    public void MoveObjectForward(Vector3 movement){
 
-        Vector3 delta = gameObject.transform.up.normalized * Time.deltaTime * speed;
-        Vector3 newLoc = gameObject.transform.position + delta;
+        Vector3 newLoc = movement + gameObject.transform.position;
 
         if (wrapAtBounds){
             newLoc = BoundaryWrap(newLoc);
@@ -154,32 +130,29 @@ public class VelocityObject : MonoBehaviour{
         newLoc.z = fixedZ;
 
         gameObject.transform.position = newLoc;
-
     }
 
-    public void MoveObject(Vector3 nudgeLoc = default(Vector3), float nudgeStrength = 0f){
-        // gameObject.transform.position = CalculateNextMarch();
-        // velocity.z = 0;
+    public void StepObject(){
+        Vector3 stepMovement = GetMoveByPhysics();
+        iter_force = Vector3.zero; //rest after using the force
 
-        // Vector3.Slerp(velocity, gameObject.transform.up, );
+        MoveObjectForward(stepMovement);
 
-        // Quaternion transition_rotation = Quaternion.FromToRotation(velocity, gameObject.transform.up);
-        // Quaternion.Slerp(transition_rotation);
+        float rotation = Quaternion.FromToRotation(gameObject.transform.up,stepMovement).eulerAngles.z;
 
+        rotation = Mathf.Lerp(rotation, desiredRot, 0.2f);
 
-        //working is below
-        Quaternion rotation = Quaternion.FromToRotation(velocity, gameObject.transform.up);
-        gameObject.transform.Rotate(new Vector3(0f, 0f, rotation.eulerAngles.z) * Time.deltaTime);
+        desiredRot = 0f; //rest after using the force
+        // gameObject.transform.Rotate(new Vector3(0, 0, rotation));
+        RotateInDirection(rotation);
+        //add rotation to follow movement?
 
-        gameObject.transform.position = CalculateNextMarch();
-
-        acceleration = defaultAccel();
         
     }
-    
+
     void Start(){
 
-        RotateInDirection(UnityEngine.Random.Range(0,360));
+        gameObject.transform.Rotate(0f, 0f, UnityEngine.Random.Range(0,360));
     }
     void Update(){
 
